@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menù del giorno</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: riepilogo giornaliero in alto, tre pasti affiancati (impilati su telefono), tabella alimenti in fondo. */
+:root{
+  --bg:#f5f7f3; --surface:#ffffff; --fg:#1c2420; --muted:#5b665e; --line:#dce2d9;
+  --accent:#1f6f5c; --accent-fg:#ffffff; --soft:#edf2ec;
+  --carb:#c68618; --fat:#3d71c2; --pro:#b4435a; --danger:#b3372f;
+  --font-display:"Space Grotesk","Inter",system-ui,sans-serif;
+  --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111613; --surface:#19201c; --fg:#e8eee9; --muted:#9aa79d; --line:#2b352f;
+    --accent:#5cc4a6; --accent-fg:#0c1a14; --soft:#202a24;
+    --carb:#e0a83e; --fat:#7ba3e8; --pro:#e27b8f; --danger:#ef8b83; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111613; --surface:#19201c; --fg:#e8eee9; --muted:#9aa79d; --line:#2b352f;
+  --accent:#5cc4a6; --accent-fg:#0c1a14; --soft:#202a24;
+  --carb:#e0a83e; --fat:#7ba3e8; --pro:#e27b8f; --danger:#ef8b83; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.45;
+  padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance}
+h1{font-size:1.75rem;letter-spacing:-.01em}
+h2{font-size:1.15rem}
+h3{font-size:1.05rem}
+.num{font-variant-numeric:tabular-nums}
+.head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+.head p{margin:0;color:var(--muted)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{background:var(--accent);color:var(--accent-fg);border:0;border-radius:6px;padding:8px 14px;font-weight:600}
+.btn-quiet{background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:6px 12px}
+.btn-quiet.warn{color:var(--danger);border-color:var(--danger)}
+.banner{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:10px 14px;color:var(--muted);font-size:.9rem}
+
+/* riepilogo giornata */
+.day{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.day-top{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end}
+.big{font-family:var(--font-display);font-size:2.6rem;line-height:1;font-weight:700}
+.big small{font-size:1rem;font-weight:500;color:var(--muted);margin-left:4px}
+.macros{display:flex;flex-wrap:wrap;gap:8px 28px}
+.macro{display:flex;flex-direction:column}
+.macro b{font-family:var(--font-display);font-size:1.4rem;font-weight:700}
+.macro span{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.c-carb{background:var(--carb)} .c-fat{background:var(--fat)} .c-pro{background:var(--pro)}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--soft)}
+.bar i{display:block;height:100%}
+.bar-legend{font-size:.8rem;color:var(--muted)}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.split div{background:var(--soft);border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;gap:8px}
+.split span{color:var(--muted)}
+
+/* pasti */
+.meals{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:16px;align-items:start}
+.meal{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.meal-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.meal-head .kc{font-family:var(--font-display);font-weight:700}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:1fr auto auto;gap:2px 10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .nm{font-weight:500;min-width:0;overflow-wrap:anywhere}
+.row .meta{grid-column:1 / -1;color:var(--muted);font-size:.82rem}
+.qty{width:76px;font:inherit;text-align:right;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.unit{color:var(--muted);margin-left:4px;font-size:.85rem}
+.rm{background:transparent;border:0;color:var(--muted);font-size:1.3rem;line-height:1;padding:4px 8px;border-radius:6px}
+.rm:hover{color:var(--danger)}
+.empty{color:var(--muted);font-size:.9rem;padding:6px 0}
+.add{display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.add select{flex:1 1 150px;min-width:0;font:inherit;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.add .qty{width:80px}
+.sums{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.sums b{color:var(--fg);font-weight:600}
+
+/* tabella alimenti */
+.foods{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.foods-top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+.foods-top p{margin:0;color:var(--muted);font-size:.85rem}
+#filtro{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:min(100%,260px)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th,td{padding:8px 10px;text-align:right;border-top:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;border-top:0;white-space:nowrap}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+tbody tr:hover{background:var(--soft)}
+.act{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.act select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.addbtn{background:var(--accent);color:var(--accent-fg);border:0;border-radius:6px;width:34px;height:34px;font-size:1.3rem;line-height:1;font-weight:600}
+.status{min-height:1.2em;color:var(--accent)!important;font-weight:500}
+.foot{color:var(--muted);font-size:.8rem;margin:0}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .25s ease}}
+html{color-scheme:light}body{margin:0}[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="head">
+    <h1>Menù del giorno</h1>
+    <button class="btn-quiet" id="reset" type="button">Svuota giornata</button>
+  </div>
+
+  <div class="banner" id="banner" hidden>Giornata di esempio. Cambia le quantità, aggiungi o togli alimenti: i totali si aggiornano subito.</div>
+
+  <section class="day" aria-labelledby="t-day">
+    <h2 id="t-day">Totale giornata</h2>
+    <div class="day-top">
+      <div class="big num"><span id="d-kcal">0</span><small>kcal</small></div>
+      <div class="macros">
+        <div class="macro"><b class="num" id="d-carb">0</b><span><i class="dot c-carb"></i>Carboidrati (g)</span></div>
+        <div class="macro"><b class="num" id="d-fat">0</b><span><i class="dot c-fat"></i>Grassi (g)</span></div>
+        <div class="macro"><b class="num" id="d-pro">0</b><span><i class="dot c-pro"></i>Proteine (g)</span></div>
+      </div>
+    </div>
+    <div class="bar" id="bar" role="img" aria-label="Ripartizione delle kcal tra carboidrati, grassi e proteine"><i class="c-carb" id="b-carb"></i><i class="c-fat" id="b-fat"></i><i class="c-pro" id="b-pro"></i></div>
+    <div class="bar-legend num" id="bar-legend"></div>
+    <div class="split" id="split"></div>
+  </section>
+
+  <section class="meals" id="meals" aria-label="Pasti"></section>
+
+  <section class="foods" aria-labelledby="t-foods">
+    <div class="foods-top">
+      <h2 id="t-foods">Alimenti</h2>
+      <input id="filtro" type="search" placeholder="Cerca un alimento" aria-label="Cerca un alimento">
+    </div>
+    <p>Valori per 100 g di alimento crudo. Scegli il pasto e premi + per aggiungere l'alimento (parte da 100 g, poi cambi la quantità nel pasto).</p>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th scope="col"><button type="button" data-k="n">Alimento</button></th>
+          <th scope="col"><button type="button" data-k="k">Kcal</button></th>
+          <th scope="col"><button type="button" data-k="c">Carbo (g)</button></th>
+          <th scope="col"><button type="button" data-k="f">Grassi (g)</button></th>
+          <th scope="col"><button type="button" data-k="p">Proteine (g)</button></th>
+          <th scope="col">Aggiungi a</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="foot">Valori ricavati dalle tabelle INRAN/CREA e dai dati che hai inserito. Il minestrone è un piatto, non un alimento crudo.</p>
+  </section>
+</div>
+
+<script>
+const FOODS=[
+{n:"Albume",k:44,c:0.9,f:0,p:10},{n:"Avocado",k:230,c:5.1,f:23,p:4.4},{n:"Burro d'arachidi",k:629,c:13,f:51,p:26},
+{n:"Cacao Amaro",k:355,c:10.5,f:21,p:20.4},{n:"Ceci",k:343,c:46.9,f:6.3,p:20.9},{n:"Cioccolato 74%",k:571,c:32,f:45,p:9.9},
+{n:"Fagioli (secchi)",k:291,c:47.5,f:2,p:23.6},{n:"Farina Integrale",k:337,c:64,f:1.9,p:12},{n:"Farro",k:374,c:75,f:1.3,p:12},
+{n:"Fave",k:341,c:61.8,f:3,p:27.2},{n:"Fette Biscottate",k:394,c:68,f:5.8,p:13},{n:"Fiocchi di Latte",k:83,c:1,f:3,p:13},
+{n:"Frise",k:367,c:80.5,f:0.1,p:11.1},{n:"Hamburger",k:150,c:0,f:5.6,p:22.4},{n:"Latte",k:47,c:4.9,f:1.6,p:3.2},
+{n:"Lenticchie",k:325,c:54,f:0,p:25},{n:"Macinato",k:137,c:0,f:5,p:21},{n:"Mais",k:75,c:14.5,f:1.2,p:2.9},
+{n:"Marmellata",k:222,c:58.7,f:0,p:0.5},{n:"Melanzane",k:18,c:2.6,f:0.4,p:1.1},{n:"Minestrone",k:51,c:7.1,f:0.5,p:2.6},
+{n:"Pane",k:252,c:57.5,f:0.4,p:10.8},{n:"Parmigiano",k:402,c:0,f:30,p:32},{n:"Pasta",k:362,c:76,f:1.5,p:12.5},
+{n:"Pastina",k:347,c:71.8,f:1.2,p:11.4},{n:"Patate",k:77,c:19.7,f:0.1,p:2},{n:"Patate Dolci",k:83,c:23.1,f:0.1,p:1.6},
+{n:"Peperoni",k:22,c:4.2,f:0.3,p:0.9},{n:"Petto Pollo",k:100,c:0,f:0.8,p:23.3},{n:"Philadelphia",k:189,c:3.7,f:15,p:8.4},
+{n:"Piadina",k:294,c:48,f:7.4,p:7.7},{n:"Piselli",k:70,c:13.4,f:1,p:5.5},{n:"Riso",k:358,c:81.3,f:0.3,p:7.4},
+{n:"Salmone",k:190,c:0.3,f:12.8,p:18},{n:"Spigola",k:124,c:0,f:2.6,p:23.6},{n:"Tonno",k:101,c:0,f:0.5,p:24},
+{n:"Uova",k:128,c:0,f:8.7,p:12},{n:"Yogurt Greco",k:54,c:3,f:0,p:10.3},{n:"Zucchine",k:27,c:4.8,f:0.2,p:2.1}
+];
+const BY=Object.fromEntries(FOODS.map(f=>[f.n,f]));
+const MEALS=[["colazione","Colazione"],["pranzo","Pranzo"],["cena","Cena"]];
+const KEY="menu-giornata-v1";
+let uid=1;
+const mk=(n,g)=>({id:uid++,n,g});
+function example(){return{
+  colazione:[mk("Latte",200),mk("Fette Biscottate",40),mk("Marmellata",20)],
+  pranzo:[mk("Pasta",80),mk("Petto Pollo",150),mk("Zucchine",200)],
+  cena:[mk("Pane",60),mk("Salmone",120),mk("Patate",150)]};}
+let state={meals:example(),example:true};
+try{
+  const s=JSON.parse(localStorage.getItem(KEY)||"null");
+  if(s&&s.meals){
+    for(const [m] of MEALS){s.meals[m]=(s.meals[m]||[]).filter(i=>BY[i.n]).map(i=>mk(i.n,Number(i.g)||0));}
+    state=s;
+  }
+}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+
+const nf=(v,d)=>v.toLocaleString("it-IT",{minimumFractionDigits:d,maximumFractionDigits:d});
+const part=(it)=>{const f=BY[it.n],r=(Number(it.g)||0)/100;return{k:f.k*r,c:f.c*r,f:f.f*r,p:f.p*r}};
+const sum=(items)=>items.reduce((a,it)=>{const x=part(it);a.k+=x.k;a.c+=x.c;a.f+=x.f;a.p+=x.p;return a},{k:0,c:0,f:0,p:0});
+const $=id=>document.getElementById(id);
+
+/* scheletro dei pasti, costruito una sola volta */
+const opts=[...FOODS].sort((a,b)=>a.n.localeCompare(b.n,"it")).map(f=>`<option value="${f.n}">${f.n}</option>`).join("");
+$("meals").innerHTML=MEALS.map(([id,label])=>`
+<article class="meal" aria-labelledby="h-${id}">
+  <div class="meal-head"><h3 id="h-${id}">${label}</h3><span class="kc num" id="mk-${id}">0 kcal</span></div>
+  <ul class="list" id="list-${id}"></ul>
+  <div class="sums num" id="sums-${id}"></div>
+</article>`).join("");
+
+function metaText(it){const x=part(it);return `${nf(x.k,0)} kcal · C ${nf(x.c,1)} · G ${nf(x.f,1)} · P ${nf(x.p,1)}`}
+function renderList(m){
+  const ul=$("list-"+m),items=state.meals[m];
+  if(!items.length){ul.innerHTML='<li class="empty">Nessun alimento. Aggiungilo dalla lista qui sotto con il pulsante +.</li>';return}
+  ul.innerHTML=items.map(it=>`
+  <li class="row" data-id="${it.id}">
+    <span class="nm">${it.n}</span>
+    <span><input class="qty num" id="q-${it.id}" type="number" min="0" step="any" inputmode="decimal" value="${it.g}" aria-label="Grammi di ${it.n}"><span class="unit">g</span></span>
+    <button class="rm" type="button" aria-label="Rimuovi ${it.n}">×</button>
+    <span class="meta num" id="m-${it.id}">${metaText(it)}</span>
+  </li>`).join("");
+}
+function totals(){
+  const all={k:0,c:0,f:0,p:0},split=[];
+  for(const [m,label] of MEALS){
+    const t=sum(state.meals[m]);
+    all.k+=t.k;all.c+=t.c;all.f+=t.f;all.p+=t.p;
+    $("mk-"+m).textContent=nf(t.k,0)+" kcal";
+    $("sums-"+m).innerHTML=`<span>Carbo <b>${nf(t.c,1)} g</b></span><span>Grassi <b>${nf(t.f,1)} g</b></span><span>Proteine <b>${nf(t.p,1)} g</b></span>`;
+    split.push(`<div><span>${label}</span><b class="num">${nf(t.k,0)} kcal</b></div>`);
+  }
+  $("d-kcal").textContent=nf(all.k,0);
+  $("d-carb").textContent=nf(all.c,1);$("d-fat").textContent=nf(all.f,1);$("d-pro").textContent=nf(all.p,1);
+  const ec=all.c*4,ef=all.f*9,ep=all.p*4,tot=ec+ef+ep;
+  const pc=tot?ec/tot*100:0,pf=tot?ef/tot*100:0,pp=tot?ep/tot*100:0;
+  $("b-carb").style.width=pc+"%";$("b-fat").style.width=pf+"%";$("b-pro").style.width=pp+"%";
+  $("bar-legend").textContent=tot?`Quota delle calorie dai macro: carboidrati ${nf(pc,0)}% · grassi ${nf(pf,0)}% · proteine ${nf(pp,0)}%`:"Aggiungi un alimento per vedere la ripartizione.";
+  $("split").innerHTML=split.join("");
+  $("banner").hidden=!state.example;
+}
+function renderAll(){for(const [m] of MEALS)renderList(m);totals()}
+
+/* eventi */
+let lastMeal="colazione";
+document.addEventListener("change",e=>{
+  const s=e.target.closest(".act select");if(!s)return;
+  lastMeal=s.value;
+  document.querySelectorAll(".act select").forEach(x=>{x.value=lastMeal});
+});
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".addbtn");if(!b)return;
+  const f=FOODS[Number(b.dataset.i)],m=b.parentElement.querySelector("select").value;
+  if(state.example){state.meals={colazione:[],pranzo:[],cena:[]};state.example=false}
+  state.meals[m].push(mk(f.n,100));
+  renderAll();save();
+  const label=MEALS.find(x=>x[0]===m)[1];
+  $("status").textContent=`${f.n} aggiunto a ${label} (100 g). Modifica la quantità nel pasto.`;
+});
+document.addEventListener("input",e=>{
+  const inp=e.target.closest(".row .qty");if(!inp)return;
+  const id=Number(inp.closest(".row").dataset.id);
+  for(const [m] of MEALS){
+    const it=state.meals[m].find(i=>i.id===id);
+    if(it){it.g=Math.max(0,parseFloat(inp.value)||0);$("m-"+id).textContent=metaText(it);state.example=false;break}
+  }
+  totals();save();
+});
+document.addEventListener("click",e=>{
+  const rm=e.target.closest(".rm");
+  if(rm){
+    const id=Number(rm.closest(".row").dataset.id);
+    for(const [m] of MEALS){const a=state.meals[m],i=a.findIndex(x=>x.id===id);if(i>=0){a.splice(i,1);state.example=false;renderList(m);break}}
+    totals();save();return;
+  }
+  const th=e.target.closest("th button");
+  if(th){const k=th.dataset.k;sort=sort.k===k?{k,d:-sort.d}:{k,d:k==="n"?1:-1};renderFoods()}
+});
+let armed=null;
+$("reset").addEventListener("click",()=>{
+  const b=$("reset");
+  if(!armed){b.textContent="Conferma: svuota tutto";b.classList.add("warn");armed=setTimeout(()=>{armed=null;b.textContent="Svuota giornata";b.classList.remove("warn")},4000);return}
+  clearTimeout(armed);armed=null;b.textContent="Svuota giornata";b.classList.remove("warn");
+  state={meals:{colazione:[],pranzo:[],cena:[]},example:false};renderAll();save();
+});
+
+/* tabella alimenti */
+let sort={k:"n",d:1};
+function renderFoods(){
+  const q=$("filtro").value.trim().toLowerCase();
+  const rows=FOODS.filter(f=>f.n.toLowerCase().includes(q)).sort((a,b)=>{
+    const x=a[sort.k],y=b[sort.k];
+    return (sort.k==="n"?x.localeCompare(y,"it"):x-y)*sort.d;
+  });
+  const mopts=MEALS.map(([id,l])=>`<option value="${id}"${id===lastMeal?" selected":""}>${l}</option>`).join("");
+  $("tbody").innerHTML=rows.length?rows.map(f=>{const i=FOODS.indexOf(f);return `<tr><td>${f.n}</td><td class="num">${nf(f.k,0)}</td><td class="num">${nf(f.c,1)}</td><td class="num">${nf(f.f,1)}</td><td class="num">${nf(f.p,1)}</td><td><div class="act"><select id="s-${i}" aria-label="Pasto per ${f.n}">${mopts}</select><button class="addbtn" type="button" data-i="${i}" aria-label="Aggiungi ${f.n} al pasto">+</button></div></td></tr>`}).join(""):'<tr><td colspan="6" class="empty">Nessun alimento trovato.</td></tr>';
+}
+$("filtro").addEventListener("input",renderFoods);
+renderFoods();renderAll();
+</script>
+
+</body>
+</html>
